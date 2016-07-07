@@ -286,7 +286,37 @@ lapply(
   processedData=cohortFlagAppendedData[, c(recordIDColName, subCohortNames)]
   )
 
+# remove the BConti flag as the reference
+cohortFlagAppendedData <- cohortFlagAppendedData %>% select(-BConti)
+
 
 
 
 # check whether the cohorts are the same as what Jie sent me
+cohort4Compare_Lichao <- tbl_df(read.csv(paste0(inputDir4DS, "Cmp.csv"))) %>% select(-record_num)
+cohort4Compare_Jie <- 
+  tbl_df(read.csv("F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-05/cohortDt_lichao_July06/Cmp.csv"))
+if (!all.equal(cohort4Compare_Lichao, cohort4Compare_Jie))
+  stop("Error! the cohorts from 05Jul and 07Jul aren't consistent!")
+
+
+
+#
+## save
+
+# re arrange the columns
+
+sortedVarNames <- sort(colnames(cohortFlagAppendedData))
+restVarNames <- sortedVarNames[!(sortedVarNames %in% c(recordIDColName, outcomes))]
+cohortFlagAppendedData <- cohortFlagAppendedData[, c(recordIDColName, outcomes, restVarNames)]
+
+#
+
+timeStamp <- as.character(Sys.time())
+timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
+resultDir <- paste("./Results/", timeStamp, "/", sep = '')
+dir.create(resultDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
+
+write.table(cohortFlagAppendedData, paste0(resultDir, "Cmp4Model.csv"), sep=",", 
+            row.names=F)
+
