@@ -1,0 +1,161 @@
+library(dplyr)
+
+rm(list=ls())
+
+rawDataFile <- 
+  "F:/Lichao/work/Projects/MultipleSclerosis/data/2016-07-01/MS_decsupp_analset_20160701.csv"
+
+refData4ModelFile <- 
+  "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-11/2016-07-11 20.07.54/Cmp4Model.csv"
+
+outcomes <- c("relapse_fu_any_01", "edssprog", "edssconf3",
+              "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
+
+missing_reps <- c('', 'NA', 'unknown', 'ambiguous')
+
+rawData <- tbl_df(read.csv(rawDataFile, na.string=missing_reps))
+refData <- tbl_df(read.csv(refData4ModelFile, na.string=missing_reps))
+refData2 <- tbl_df(as.data.frame(sapply(refData, as.numeric)))
+rawNames <- colnames(rawData)
+
+vars2Copy <- outcomes
+
+resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
+  # impute years_diag_idx
+  mutate(years_diag_idx_imputed = ifelse(!is.na(years_diag_idx), years_diag_idx, median(years_diag_idx, na.rm=T))) %>%
+  select(-years_diag_idx) %>%
+  dplyr::rename(years_diag_idx=years_diag_idx_imputed) %>%
+  filter(record_num %in% refData$record_num) %>%
+  # "age__31to40","age__41to50","age__ge51"
+  mutate(age__31to40 = as.numeric((age >= 31) & (age <= 40)),
+         age__41to50 = as.numeric((age >= 41) & (age <= 50)), 
+         age__ge51 = as.numeric((age >= 51))) %>%
+  # "avl_idx_alem__1","avl_idx_fing__1","avl_idx_tecf__1","avl_idx_teri__1"
+  mutate(
+    avl_idx_alem__1 = avl_idx_alem,
+    avl_idx_fing__1 = avl_idx_fing,
+    avl_idx_tecf__1 = avl_idx_tecf, 
+    avl_idx_teri__1 = avl_idx_teri
+  ) %>% 
+  # "B2B","B2Fir","B2Sec"
+  mutate(B2B = as.numeric(tblcoh == 2), 
+         B2Fir = as.numeric(tblcoh == 3),
+         B2Sec = as.numeric(tblcoh == 4)) %>%
+  # "baseline_edss_score__1d5_2","baseline_edss_score__ge2d5"
+  mutate(baseline_edss_score__1d5_2 = as.numeric((baseline_edss_score == 1.5) | (baseline_edss_score == 2)),
+         baseline_edss_score__ge2d5 = as.numeric(baseline_edss_score >= 2.5)) %>%
+  # "birth_region__missing","birth_region__others"
+  mutate(birth_region__missing = as.numeric(is.na(birth_region)), 
+         birth_region__others = ifelse(is.na(birth_region), 0, birth_region != "Central Europe")) %>%
+  # "dayssup__gt360"
+  mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
+  mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+  select(-dayssup) %>%
+  # gender__M
+  mutate(gender__M = as.numeric(gender == "M")) %>%
+  # "last_cranial_num__gt8","last_cranial_num__le8"
+  mutate(last_cranial_num__gt8 = ifelse(is.na(last_cranial_num), 0, last_cranial_num==">8"),
+         last_cranial_num__le8 = ifelse(is.na(last_cranial_num), 0, last_cranial_num %in% c("0", "1", "2-5", "6-8"))) %>%
+  # "last_spinal_num__gt2","last_spinal_num__le2"
+  mutate(last_spinal_num__gt2 = ifelse(is.na(last_spinal_num), 0, last_spinal_num==">2"),
+         last_spinal_num__le2 = ifelse(is.na(last_spinal_num), 0, last_spinal_num %in% c("0", "1", "2"))) %>%
+  # "pre_dmts_1__2","pre_dmts_2__1_OR_2_OR_3","pre_dmts_3__1_OR_2","pre_dmts_4__1_OR_2_OR_3"
+  # because pre_dmts don't seem to affect the importance of dayssup, just copy from refData
+  mutate(pre_dmts_1__2 = refData$pre_dmts_1__2[order(refData$record_num)], 
+         pre_dmts_2__1_OR_2_OR_3 = refData$pre_dmts_2__1_OR_2_OR_3[order(refData$record_num)], 
+         pre_dmts_3__1_OR_2 = refData$pre_dmts_3__1_OR_2[order(refData$record_num)], 
+         pre_dmts_4__1_OR_2_OR_3 = refData$pre_dmts_4__1_OR_2_OR_3[order(refData$record_num)]) %>%
+  # "pre1_edss_score__0_1","pre1_edss_score__1d5_2","pre1_edss_score__ge2d5"
+  mutate(
+    pre1_edss_score__0_1 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(0,1)),
+    pre1_edss_score__1d5_2 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(1.5, 2)),
+    pre1_edss_score__ge2d5 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score >= 2.5)
+  ) %>%
+  # "pre1_edssconf3__0","pre1_edssconf3__1","pre1_edssprog__0","pre1_edssprog__1"
+  mutate(
+    pre1_edssconf3__0 = ifelse(is.na(pre1_edssconf3), 0, pre1_edssconf3 == 0),
+    pre1_edssconf3__1 = ifelse(is.na(pre1_edssconf3), 0, pre1_edssconf3 == 1), 
+    pre1_edssprog__0 = ifelse(is.na(pre1_edssprog), 0, pre1_edssprog == 0),
+    pre1_edssprog__1 = ifelse(is.na(pre1_edssprog), 0, pre1_edssprog == 1)
+  ) %>%
+  # "pre2_edss_score__0_1","pre2_edss_score__1d5_2","pre2_edss_score__ge2d5"
+  mutate(
+    pre2_edss_score__0_1 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score %in% c(0,1)),
+    pre2_edss_score__1d5_2 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score %in% c(1.5, 2)),
+    pre2_edss_score__ge2d5 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score >= 2.5)
+  ) %>%
+  # "pre2_edssconf3__0","pre2_edssconf3__1","pre2_edssprog__0","pre2_edssprog__1"
+  mutate(
+    pre2_edssconf3__0 = ifelse(is.na(pre2_edssconf3), 0, pre2_edssconf3 == 0),
+    pre2_edssconf3__1 = ifelse(is.na(pre2_edssconf3), 0, pre2_edssconf3 == 1), 
+    pre2_edssprog__0 = ifelse(is.na(pre2_edssprog), 0, pre2_edssprog == 0),
+    pre2_edssprog__1 = ifelse(is.na(pre2_edssprog), 0, pre2_edssprog == 1)
+  ) %>%
+  # "pre3_edss_score__0_1","pre3_edss_score__1d5_2","pre3_edss_score__ge2d5"
+  mutate(
+    pre3_edss_score__0_1 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score %in% c(0,1)),
+    pre3_edss_score__1d5_2 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score %in% c(1.5, 2)),
+    pre3_edss_score__ge2d5 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score >= 2.5)
+  ) %>%
+  # "pre3_edssconf3__0","pre3_edssconf3__1","pre3_edssprog__0","pre3_edssprog__1"
+  mutate(
+    pre3_edssconf3__0 = ifelse(is.na(pre3_edssconf3), 0, pre3_edssconf3 == 0),
+    pre3_edssconf3__1 = ifelse(is.na(pre3_edssconf3), 0, pre3_edssconf3 == 1), 
+    pre3_edssprog__0 = ifelse(is.na(pre3_edssprog), 0, pre3_edssprog == 0),
+    pre3_edssprog__1 = ifelse(is.na(pre3_edssprog), 0, pre3_edssprog == 1)
+  ) %>%
+  # "relapse_pre_181to360_01__1","relapse_pre_1to2_01__1","relapse_pre_2to3_01__1",
+  # "relapse_pre_3to4_01__1","relapse_pre_90_01__1","relapse_pre_91to180_01__1"
+  mutate(relapse_pre_181to360_01__1 = relapse_pre_181to360_01,
+         relapse_pre_1to2_01__1 = relapse_pre_1to2_01, 
+         relapse_pre_2to3_01__1 = relapse_pre_2to3_01,
+         relapse_pre_3to4_01__1 = relapse_pre_3to4_01,
+         relapse_pre_90_01__1 = relapse_pre_90_01,
+         relapse_pre_91to180_01__1 = relapse_pre_91to180_01) %>%
+  # "years_diag_idx__gt2_le5","years_diag_idx__gt5"
+  mutate(years_diag_idx__gt2_le5 = as.numeric((years_diag_idx > 2) & (years_diag_idx <= 5)),
+         years_diag_idx__gt5 = as.numeric(years_diag_idx > 5)) %>%
+  # remove variables not to be kept in the result
+  {
+    names2Remove <- rawNames[!(rawNames %in% vars2Copy)]
+    select(., -one_of(names2Remove))
+  }
+
+
+sortedVarNames <- sort(colnames(resultData))
+restVarNames <- sortedVarNames[!(sortedVarNames %in% c("record_num", outcomes))]
+resultData <- resultData[, c("record_num", outcomes, restVarNames)]
+
+#
+
+
+
+print("checking..")
+
+for (iRowInResult in 1:nrow(resultData))
+{
+  for (iVar in 1:ncol(resultData))
+  {
+    r_id <- resultData$record_num[iRowInResult]
+    valResult <- resultData[iRowInResult, iVar]
+    valRef <- refData[refData$record_num==r_id, iVar]
+    difference <- valResult - valRef
+    if (difference != 0)
+    {
+      stop(paste0("Error! iRowInResult: ", iRowInResult, "; iVar: ", iVar))
+    }
+  }
+}
+print("checking passed.")
+
+timeStamp <- as.character(Sys.time())
+timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
+resultDir <- paste("./Results/", timeStamp, "/", sep = '')
+dir.create(resultDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
+
+write.table(resultData, paste0(resultDir, "Cmp4Model.csv"), sep=",", 
+            row.names=F)
+
+
+
+
