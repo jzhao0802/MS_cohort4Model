@@ -95,6 +95,7 @@ FindBinVarReference <- function(prefix, allVarNames, dataset, minRefPct)
   return (refVarName)
 }
 
+bQcMode <-T 
 inputDir4DS <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-07/2016-07-07 12.24.06/"
 outcomes <- c("relapse_fu_any_01", "edssprog", "edssconf3",
               "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
@@ -103,7 +104,10 @@ orgCohort <- tbl_df(read.csv(paste0(inputDir4DS, "Cmp.csv"))) %>%
   dplyr::rename(dayssup__gt360=dayssup_gt360) %>%
   dplyr::rename(dayssup__le360=dayssup_le360)
 
-
+if(bQcMode==T){
+  if(!is.null(c(orgCohort$dayssup_le360, orgCohort$dayssup_gt360)))
+    stop('error!\n\n')
+}
 
 #
 ## Impute the years_diag_idx
@@ -118,6 +122,16 @@ medianYears <- median(
     na.strings=missing_reps
     )$years_diag_idx, na.rm=T
   )
+
+if(bQcMode==T){
+  if(!is.numeric(read.csv(
+    paste0(cohortDir_Jie, "dt_Cmp_withoutTransf.csv"), 
+    na.strings=missing_reps
+  )$years_diag_idx))
+    stop('not numeric!\n\n')
+}
+
+
 if (medianYears <= 2)
 {
   orgCohort[orgCohort$years_diag_idx__missing==1, "years_diag_idx__le2"] <- 1
@@ -126,6 +140,18 @@ if (medianYears <= 2)
   orgCohort[orgCohort$years_diag_idx__missing==1, "years_diag_idx__gt2_le5"] <- 1
 } else
   orgCohort[orgCohort$years_diag_idx__missing==1, "years_diag_idx__gt5"] <- 1
+
+if(bQcMode){
+  bImpComplte <- apply(
+    orgCohort[, setdiff(grep('^years_diag_idx__'
+                             , names(orgCohort)
+                             , value=T
+                             , ignore.case = T)
+                        , 'years_diag_idx__missing')
+              ], 1, sum)
+  if(any(bImpComplte == 0) | any(is.na(bImpComplte)))
+    stop('not impute completely!\n\n')
+}
 
 orgCohort <- select(orgCohort, -years_diag_idx__missing)
 
@@ -161,7 +187,15 @@ refs4RemainPrefixes <- c(
   "gender__F"
 )
 
+
 referencesForBinVars[is.na(referencesForBinVars)] <- refs4RemainPrefixes
+
+if(bQcMode){
+  uniqPrefixes4Qc <- gsub("(.*)__(.*)", "\\1", referencesForBinVars)
+  if(length(unique(uniqPrefixes4Qc))!= length(referencesForBinVars)){
+    stop("wrong!\n\n")
+  }
+}
 
 # remove ref categories
 
@@ -169,6 +203,13 @@ remainVarNames <- colnames(orgCohort)[!(colnames(orgCohort) %in% referencesForBi
 
 recordIDColName <- "record_num"
 refRemovedCohort <- select_(orgCohort, .dots=c(remainVarNames, recordIDColName))
+if(bQcMode){
+  if(any(referencesForBinVars %in% names(refRemovedCohort)))
+    stop('reference varibles have not been removed completely!\n\n')
+  diffVars <- setdiff(names(refRemovedCohort), remainVarNames)
+  if( !all(length(diffVars)==1 & diffVars== "record_num"))
+    stop("variables are not consistent!\n\n")
+}
 
 
 
@@ -209,7 +250,8 @@ cohortFlagAppendedData <-
   refRemovedCohort %>%
   {
     .[, subCohortNames] <- 0
-    
+#     .
+#   }
     for (i in 1:nrow(.))
     {
       record_id <- as.data.frame(.)[i, recordIDColName]
@@ -219,6 +261,7 @@ cohortFlagAppendedData <-
     }
     .
   }
+
 #   {
 #     varval <- interp(quote(ifelse(recordIDColName %in% recordIDs_AllSubCohorts[[subCohortNames[1]]], 1, 0)), 
 #                      recordIDColName=recordIDColName, recordIDs_AllSubCohorts=recordIDs_AllSubCohorts, 
