@@ -6,12 +6,19 @@ rawDataFile <-
   "F:/Lichao/work/Projects/MultipleSclerosis/data/2016-07-01/MS_decsupp_analset_20160701.csv"
 
 refData4ModelFile <- 
-  "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-11/2016-07-11 20.07.54/Cmp4Model.csv"
+  "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-11/2016-07-12 09.25.36/Cmp4Model.csv"
 
 outcomes <- c("relapse_fu_any_01", "edssprog", "edssconf3",
               "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
 missing_reps <- c('', 'NA', 'unknown', 'ambiguous')
+
+preDmtPrefixes <- c("rx_fing_", "rx_ga_", "rx_nat_", "rx_ext_", "rx_avo_", 
+                    "rx_reb_", "rx_bet_", "rx_tecf_", "rx_teri_", "rx_alem_")
+preDmtBoolVals_1 <- paste0(preDmtPrefixes, "1")
+preDmtBoolVals_2 <- paste0(preDmtPrefixes, "2")
+preDmtBoolVals_3 <- paste0(preDmtPrefixes, "3")
+preDmtBoolVals_4 <- paste0(preDmtPrefixes, "4")
 
 rawData <- tbl_df(read.csv(rawDataFile, na.string=missing_reps))
 refData <- tbl_df(read.csv(refData4ModelFile, na.string=missing_reps))
@@ -21,11 +28,11 @@ rawNames <- colnames(rawData)
 vars2Copy <- outcomes
 
 resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
+  filter(record_num %in% refData$record_num) %>%
   # impute years_diag_idx
   mutate(years_diag_idx_imputed = ifelse(!is.na(years_diag_idx), years_diag_idx, median(years_diag_idx, na.rm=T))) %>%
   select(-years_diag_idx) %>%
   dplyr::rename(years_diag_idx=years_diag_idx_imputed) %>%
-  filter(record_num %in% refData$record_num) %>%
   # "age__31to40","age__41to50","age__ge51"
   mutate(age__31to40 = as.numeric((age >= 31) & (age <= 40)),
          age__41to50 = as.numeric((age >= 41) & (age <= 50)), 
@@ -60,11 +67,90 @@ resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
   mutate(last_spinal_num__gt2 = ifelse(is.na(last_spinal_num), 0, last_spinal_num==">2"),
          last_spinal_num__le2 = ifelse(is.na(last_spinal_num), 0, last_spinal_num %in% c("0", "1", "2"))) %>%
   # "pre_dmts_1__2","pre_dmts_2__1_OR_2_OR_3","pre_dmts_3__1_OR_2","pre_dmts_4__1_OR_2_OR_3"
-  # because pre_dmts don't seem to affect the importance of dayssup, just copy from refData
-  mutate(pre_dmts_1__2 = refData$pre_dmts_1__2[order(refData$record_num)], 
-         pre_dmts_2__1_OR_2_OR_3 = refData$pre_dmts_2__1_OR_2_OR_3[order(refData$record_num)], 
-         pre_dmts_3__1_OR_2 = refData$pre_dmts_3__1_OR_2[order(refData$record_num)], 
-         pre_dmts_4__1_OR_2_OR_3 = refData$pre_dmts_4__1_OR_2_OR_3[order(refData$record_num)]) %>%
+  mutate(
+    rx_fing_1 = ifelse(idx_rx==1, 0, rx_fing_1),
+    rx_fing_2 = ifelse(idx_rx==1, 0, rx_fing_2),
+    rx_fing_3 = ifelse(idx_rx==1, 0, rx_fing_3),
+    rx_fing_4 = ifelse(idx_rx==1, 0, rx_fing_4),
+    
+    rx_ga_1 = ifelse(idx_rx==2, 0, rx_ga_1),
+    rx_ga_2 = ifelse(idx_rx==2, 0, rx_ga_2),
+    rx_ga_3 = ifelse(idx_rx==2, 0, rx_ga_3),
+    rx_ga_4 = ifelse(idx_rx==2, 0, rx_ga_4),
+    
+    rx_nat_1 = ifelse(idx_rx==3, 0, rx_nat_1),
+    rx_nat_2 = ifelse(idx_rx==3, 0, rx_nat_2),
+    rx_nat_3 = ifelse(idx_rx==3, 0, rx_nat_3),
+    rx_nat_4 = ifelse(idx_rx==3, 0, rx_nat_4),
+    
+    rx_ext_1 = ifelse(idx_rx==4, 0, rx_ext_1),
+    rx_ext_2 = ifelse(idx_rx==4, 0, rx_ext_2),
+    rx_ext_3 = ifelse(idx_rx==4, 0, rx_ext_3),
+    rx_ext_4 = ifelse(idx_rx==4, 0, rx_ext_4),
+    
+    rx_bet_1 = ifelse(idx_rx==5, 0, rx_bet_1),
+    rx_bet_2 = ifelse(idx_rx==5, 0, rx_bet_2),
+    rx_bet_3 = ifelse(idx_rx==5, 0, rx_bet_3),
+    rx_bet_4 = ifelse(idx_rx==5, 0, rx_bet_4),
+    
+    rx_avo_1 = ifelse(idx_rx==6, 0, rx_avo_1),
+    rx_avo_2 = ifelse(idx_rx==6, 0, rx_avo_2),
+    rx_avo_3 = ifelse(idx_rx==6, 0, rx_avo_3),
+    rx_avo_4 = ifelse(idx_rx==6, 0, rx_avo_4),
+    
+    rx_reb_1 = ifelse(idx_rx==7, 0, rx_reb_1),
+    rx_reb_2 = ifelse(idx_rx==7, 0, rx_reb_2),
+    rx_reb_3 = ifelse(idx_rx==7, 0, rx_reb_3),
+    rx_reb_4 = ifelse(idx_rx==7, 0, rx_reb_4),
+    
+    rx_tecf_1 = ifelse(idx_rx==10, 0, rx_tecf_1),
+    rx_tecf_2 = ifelse(idx_rx==10, 0, rx_tecf_2),
+    rx_tecf_3 = ifelse(idx_rx==10, 0, rx_tecf_3),
+    rx_tecf_4 = ifelse(idx_rx==10, 0, rx_tecf_4),
+    
+    rx_teri_1 = ifelse(idx_rx==11, 0, rx_teri_1),
+    rx_teri_2 = ifelse(idx_rx==11, 0, rx_teri_2),
+    rx_teri_3 = ifelse(idx_rx==11, 0, rx_teri_3),
+    rx_teri_4 = ifelse(idx_rx==11, 0, rx_teri_4),
+    
+    rx_alem_1 = ifelse(idx_rx==13, 0, rx_alem_1),
+    rx_alem_2 = ifelse(idx_rx==13, 0, rx_alem_2),
+    rx_alem_3 = ifelse(idx_rx==13, 0, rx_alem_3),
+    rx_alem_4 = ifelse(idx_rx==13, 0, rx_alem_4)
+  ) %>%
+  {
+    eval(parse(text=paste0(
+      "mutate(., pre_dmts_1=", paste(preDmtBoolVals_1, collapse="+"), ")"
+    )))
+  } %>%
+  {
+    eval(parse(text=paste0(
+      "mutate(., pre_dmts_2=", paste(preDmtBoolVals_2, collapse="+"), ")"
+    )))
+  } %>%
+  {
+    eval(parse(text=paste0(
+      "mutate(., pre_dmts_3=", paste(preDmtBoolVals_3, collapse="+"), ")"
+    )))
+  } %>%
+  {
+    eval(parse(text=paste0(
+      "mutate(., pre_dmts_4=", paste(preDmtBoolVals_4, collapse="+"), ")"
+    )))
+  } %>%
+  # "pre_dmts_1__2","pre_dmts_2__1_OR_2_OR_3","pre_dmts_3__1_OR_2","pre_dmts_4__1_OR_2_OR_3"
+  mutate(
+    pre_dmts_1__2 = as.numeric(pre_dmts_1==2),
+    pre_dmts_2__1_OR_2_OR_3 = as.numeric(pre_dmts_2 %in% c(1,2,3)),
+    pre_dmts_3__1_OR_2 = as.numeric(pre_dmts_3 %in% c(1,2)),
+    pre_dmts_4__1_OR_2_OR_3 = as.numeric(pre_dmts_4 %in% c(1,2,3))
+    ) %>%
+  select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) %>%
+#   # because pre_dmts don't seem to affect the importance of dayssup, just copy from refData
+#   mutate(pre_dmts_1__2 = refData$pre_dmts_1__2[order(refData$record_num)], 
+#          pre_dmts_2__1_OR_2_OR_3 = refData$pre_dmts_2__1_OR_2_OR_3[order(refData$record_num)], 
+#          pre_dmts_3__1_OR_2 = refData$pre_dmts_3__1_OR_2[order(refData$record_num)], 
+#          pre_dmts_4__1_OR_2_OR_3 = refData$pre_dmts_4__1_OR_2_OR_3[order(refData$record_num)]) %>%
   # "pre1_edss_score__0_1","pre1_edss_score__1d5_2","pre1_edss_score__ge2d5"
   mutate(
     pre1_edss_score__0_1 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(0,1)),
@@ -137,8 +223,8 @@ for (iRowInResult in 1:nrow(resultData))
   for (iVar in 1:ncol(resultData))
   {
     r_id <- resultData$record_num[iRowInResult]
-    valResult <- resultData[iRowInResult, iVar]
-    valRef <- refData[refData$record_num==r_id, iVar]
+    valResult <- as.numeric(resultData[iRowInResult, iVar])
+    valRef <- as.numeric(refData[refData$record_num==r_id, iVar])
     difference <- valResult - valRef
     if (difference != 0)
     {
