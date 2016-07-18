@@ -218,20 +218,56 @@ resultData <- resultData[, c("record_num", outcomes, restVarNames)]
 
 print("checking..")
 
-for (iRowInResult in 1:nrow(resultData))
+CompareOneCol <- function(columnName, df1, df2, recordColName)
 {
-  for (iVar in 1:ncol(resultData))
+  if (columnName == recordColName)
   {
-    r_id <- resultData$record_num[iRowInResult]
-    valResult <- as.numeric(resultData[iRowInResult, iVar])
-    valRef <- as.numeric(refData[refData$record_num==r_id, iVar])
-    difference <- valResult - valRef
-    if (difference != 0)
+    if (!all.equal(sort(as.data.frame(df1)[, columnName]), sort(as.data.frame(df2)[, columnName])))
+      stop("Error! record_num inconsistent!")
+    else 
     {
-      stop(paste0("Error! iRowInResult: ", iRowInResult, "; iVar: ", iVar))
+      return (T)
     }
   }
+  select(df1, one_of(c(recordColName, columnName))) %>%
+    rename_(V1 = columnName) %>%
+    left_join(
+      select(df2, one_of(c(recordColName, columnName))) %>%
+        rename_(V2 = columnName), 
+      by=recordColName
+      ) %>%
+    mutate(difference = (as.numeric(V1) - as.numeric(V2))) %>%
+    summarise(flag=any(difference != 0)) %>%
+    {
+      if (.$flag[1])
+        stop(paste0("Error! ", columnName, " inconsistent with ref result!"))
+    }
+    
+    T
+    
 }
+
+if (!(all.equal(colnames(resultData), colnames(refData))))
+  stop("Error! resultData and refData have different column names!")
+
+lapply(colnames(resultData), CompareOneCol, df1=resultData, df2=refData, recordColName="record_num")
+
+
+
+# for (iRowInResult in 1:nrow(resultData))
+# {
+#   for (iVar in 1:ncol(resultData))
+#   {
+#     r_id <- resultData$record_num[iRowInResult]
+#     valResult <- as.numeric(resultData[iRowInResult, iVar])
+#     valRef <- as.numeric(refData[refData$record_num==r_id, iVar])
+#     difference <- valResult - valRef
+#     if (difference != 0)
+#     {
+#       stop(paste0("Error! iRowInResult: ", iRowInResult, "; iVar: ", iVar))
+#     }
+#   }
+# }
 print("checking passed.")
 
 timeStamp <- as.character(Sys.time())
