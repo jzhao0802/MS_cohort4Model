@@ -182,7 +182,7 @@ naIndices <- which(is.na(referencesForBinVars))
 remainPrefixes <- uniquePrefixes[naIndices]
 refs4RemainPrefixes <- c(
   "age__le30",
-  "baseline_edss_score__0_1",
+  "baseline_edss_score__0",
   "birth_region__Central_Europe",
   "gender__F"
 )
