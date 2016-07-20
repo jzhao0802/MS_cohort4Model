@@ -49,8 +49,8 @@ resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
          B2Fir = as.numeric(tblcoh == 3),
          B2Sec = as.numeric(tblcoh == 4)) %>%
   # "baseline_edss_score__1d5_2","baseline_edss_score__ge2d5"
-  mutate(baseline_edss_score__1d5_2 = as.numeric((baseline_edss_score == 1.5) | (baseline_edss_score == 2)),
-         baseline_edss_score__ge2d5 = as.numeric(baseline_edss_score >= 2.5)) %>%
+  mutate(baseline_edss_score__1_4 = as.numeric(Between(baseline_edss_score, 1, 4)),
+         baseline_edss_score__gt4 = as.numeric(baseline_edss_score > 4)) %>%
   # "birth_region__missing","birth_region__others"
   mutate(birth_region__missing = as.numeric(is.na(birth_region)), 
          birth_region__others = ifelse(is.na(birth_region), 0, birth_region != "Central Europe")) %>%
@@ -153,9 +153,9 @@ resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
 #          pre_dmts_4__1_OR_2_OR_3 = refData$pre_dmts_4__1_OR_2_OR_3[order(refData$record_num)]) %>%
   # "pre1_edss_score__0_1","pre1_edss_score__1d5_2","pre1_edss_score__ge2d5"
   mutate(
-    pre1_edss_score__0_1 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(0,1)),
-    pre1_edss_score__1d5_2 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(1.5, 2)),
-    pre1_edss_score__ge2d5 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score >= 2.5)
+    pre1_edss_score__0 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(0)),
+    pre1_edss_score__1_4 = ifelse(is.na(pre1_edss_score), 0,  between(pre1_edss_score, 1, 4)),
+    pre1_edss_score__gt4 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score > 4)
   ) %>%
   # "pre1_edssconf3__0","pre1_edssconf3__1","pre1_edssprog__0","pre1_edssprog__1"
   mutate(
@@ -166,9 +166,9 @@ resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
   ) %>%
   # "pre2_edss_score__0_1","pre2_edss_score__1d5_2","pre2_edss_score__ge2d5"
   mutate(
-    pre2_edss_score__0_1 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score %in% c(0,1)),
-    pre2_edss_score__1d5_2 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score %in% c(1.5, 2)),
-    pre2_edss_score__ge2d5 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score >= 2.5)
+    pre2_edss_score__0 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score %in% c(0)),
+    pre2_edss_score__1_4 = ifelse(is.na(pre2_edss_score), 0,  between(pre2_edss_score, 1, 4)),
+    pre2_edss_score__gt4 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score > 4)
   ) %>%
   # "pre2_edssconf3__0","pre2_edssconf3__1","pre2_edssprog__0","pre2_edssprog__1"
   mutate(
@@ -179,9 +179,9 @@ resultData <- mutate(rawData, record_num = 1:nrow(rawData)) %>%
   ) %>%
   # "pre3_edss_score__0_1","pre3_edss_score__1d5_2","pre3_edss_score__ge2d5"
   mutate(
-    pre3_edss_score__0_1 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score %in% c(0,1)),
-    pre3_edss_score__1d5_2 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score %in% c(1.5, 2)),
-    pre3_edss_score__ge2d5 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score >= 2.5)
+    pre3_edss_score__0 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score %in% c(0)),
+    pre3_edss_score__1_4 = ifelse(is.na(pre3_edss_score), 0,  between(pre3_edss_score, 1, 4)),
+    pre3_edss_score__gt4 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score > 4)
   ) %>%
   # "pre3_edssconf3__0","pre3_edssconf3__1","pre3_edssprog__0","pre3_edssprog__1"
   mutate(
