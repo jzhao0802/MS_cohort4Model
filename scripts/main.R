@@ -96,7 +96,7 @@ FindBinVarReference <- function(prefix, allVarNames, dataset, minRefPct)
 }
 
 bQcMode <-T 
-inputDir4DS <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-07/2016-07-07 12.24.06/"
+inputDir4DS <- "F:/Jie/MS/03_Result/2016-07-19/2016-07-19 01.52.43/"
 outcomes <- c("relapse_fu_any_01", "edssprog", "edssconf3",
               "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
@@ -342,8 +342,34 @@ cohortFlagAppendedData <- cohortFlagAppendedData %>% select(-BConti)
 # if (!all.equal(cohort4Compare_Lichao, cohort4Compare_Jie))
 #   stop("Error! the cohorts from 05Jul and 07Jul aren't consistent!")
 
-
-
+# # use the new category of edss score related variables to replace those old ones
+# new_edss_score_cate <- rawData[cohortFlagAppendedData$record_num, ] %>%
+#   mutate(baseline_edss_score__1_4 = as.numeric(between(baseline_edss_score, 1, 4)),
+#          baseline_edss_score__gt4 = as.numeric(baseline_edss_score > 4)) %>%
+#   mutate(
+#     pre1_edss_score__0 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(0)),
+#     pre1_edss_score__1_4 = ifelse(is.na(pre1_edss_score), 0,  between(pre1_edss_score, 1, 4)),
+#     pre1_edss_score__gt4 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score > 4)
+#   ) %>%
+#   mutate(
+#     pre2_edss_score__0 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score %in% c(0)),
+#     pre2_edss_score__1_4 = ifelse(is.na(pre2_edss_score), 0,  between(pre2_edss_score, 1, 4)),
+#     pre2_edss_score__gt4 = ifelse(is.na(pre2_edss_score), 0, pre2_edss_score > 4)
+#   ) %>%
+#   mutate(
+#     pre3_edss_score__0 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score %in% c(0)),
+#     pre3_edss_score__1_4 = ifelse(is.na(pre3_edss_score), 0,  between(pre3_edss_score, 1, 4)),
+#     pre3_edss_score__gt4 = ifelse(is.na(pre3_edss_score), 0, pre3_edss_score > 4)
+#   )
+# 
+# cohortFlagAppendedData1 <- cohortFlagAppendedData %>%
+# {
+#   dtLastStep <- .
+#   oldVars <- grep("edss_score", names(dtLastStep), value = T)
+#   newVars <- grep('edss_score__', names(new_edss_score_cate), value = T)
+#   newDt <- dtLastStep %>% select(-one_of(oldVars)) %>% bind_cols(new_edss_score_cate[, newVars])
+#   newDt
+# }
 #
 ## save
 
