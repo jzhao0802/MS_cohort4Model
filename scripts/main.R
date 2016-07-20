@@ -335,12 +335,12 @@ cohortFlagAppendedData <- cohortFlagAppendedData %>% select(-BConti)
 
 
 
-# check whether the cohorts are the same as what Jie sent me
-cohort4Compare_Lichao <- tbl_df(read.csv(paste0(inputDir4DS, "Cmp.csv"))) %>% select(-record_num)
-cohort4Compare_Jie <- 
-  tbl_df(read.csv("F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-05/cohortDt_lichao_July06/Cmp.csv"))
-if (!all.equal(cohort4Compare_Lichao, cohort4Compare_Jie))
-  stop("Error! the cohorts from 05Jul and 07Jul aren't consistent!")
+# # check whether the cohorts are the same as what Jie sent me
+# cohort4Compare_Lichao <- tbl_df(read.csv(paste0(inputDir4DS, "Cmp.csv"))) %>% select(-record_num)
+# cohort4Compare_Jie <- 
+#   tbl_df(read.csv("F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-05/cohortDt_lichao_July06/Cmp.csv"))
+# if (!all.equal(cohort4Compare_Lichao, cohort4Compare_Jie))
+#   stop("Error! the cohorts from 05Jul and 07Jul aren't consistent!")
 
 
 
