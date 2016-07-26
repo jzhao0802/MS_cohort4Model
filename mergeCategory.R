@@ -1,7 +1,7 @@
 rm(list=ls())
 
 library(dplyr)
-inDir <- "F:/Jie/MS/02_Code/MS_Cohort4Model/Results/2016-07-25 09.49.59/"
+inDir <- "F:/Jie/MS/03_Result/2016-07-26/2016-07-26 04.01.47/"
 cohNames <- c("Cmp", "BConti", "B2B", "B2Fir", "B2Sec")
 timeStamp <- as.character(Sys.time())
 timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
