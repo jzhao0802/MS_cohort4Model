@@ -52,22 +52,44 @@ for(coh in cohNames){
       avl_idx_fing__1 = avl_idx_fing,
       avl_idx_tecf__1 = avl_idx_tecf, 
       avl_idx_teri__1 = avl_idx_teri
-    ) %>% 
+    ) 
+    if(coh == 'Cmp'){
+      resultData <- resultData %>%
+        mutate(B2B = as.numeric(tblcoh == 2), 
+               B2Fir = as.numeric(tblcoh == 3),
+               B2Sec = as.numeric(tblcoh == 4)) 
+    }
     # "B2B","B2Fir","B2Sec"
-    mutate(B2B = as.numeric(tblcoh == 2), 
-           B2Fir = as.numeric(tblcoh == 3),
-           B2Sec = as.numeric(tblcoh == 4)) %>%
+    
     # "baseline_edss_score__1d5_2","baseline_edss_score__ge2d5"
+    resultData <- resultData %>%
     mutate(baseline_edss_score__1_4 = as.numeric(between(baseline_edss_score, 1, 4)),
            baseline_edss_score__gt4 = as.numeric(baseline_edss_score > 4)) %>%
     # "birth_region__missing","birth_region__others"
     mutate(birth_region__Central_Europe = ifelse(is.na(birth_region), 0, birth_region == "Central Europe"), 
-           birth_region__others = ifelse(is.na(birth_region), 0, birth_region != "Central Europe")) %>%
+           birth_region__others = ifelse(is.na(birth_region), 0, birth_region != "Central Europe")) 
     # "dayssup__gt360"
-    mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
-    mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
-    select(-dayssup) %>%
+    if(coh=="BConti"){
+      resultData <- resultData %>%
+      mutate(dayssup = precont_dayssup) %>%
+        mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+        select(-dayssup) 
+        
+    }else if(coh == "Cmp"){
+      resultData <- resultData %>%
+      mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
+        mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+        select(-dayssup)
+        
+    }else{
+      resultData <- resultData %>%
+      mutate(dayssup = switch_rx_dayssup) %>%
+        mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+        select(-dayssup)
+        
+    }
     # gender__M
+    resultData <- resultData %>%
     mutate(gender__M = as.numeric(gender == "M")) %>%
     # "last_cranial_num__gt8","last_cranial_num__le8"
     mutate(last_cranial_num__gt8 = ifelse(is.na(last_cranial_num), 0, last_cranial_num==">8"),
