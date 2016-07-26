@@ -61,7 +61,7 @@ for(coh in cohNames){
     mutate(baseline_edss_score__1_4 = as.numeric(between(baseline_edss_score, 1, 4)),
            baseline_edss_score__gt4 = as.numeric(baseline_edss_score > 4)) %>%
     # "birth_region__missing","birth_region__others"
-    mutate(birth_region__Central_Europe = ifelse(is.na(birth_region), 0, birth_region = "Central Europe"), 
+    mutate(birth_region__Central_Europe = ifelse(is.na(birth_region), 0, birth_region == "Central Europe"), 
            birth_region__others = ifelse(is.na(birth_region), 0, birth_region != "Central Europe")) %>%
     # "dayssup__gt360"
     mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
