@@ -32,7 +32,7 @@ dir.create(resultDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
 
 for(coh in cohNames){
   refData4ModelFile <- 
-    paste0("F:/Jie/MS/03_Result/2016-07-25/2016-07-25 09.29.06/", coh, "4Model.csv")
+    paste0("F:/Jie/MS/03_Result/2016-07-26/2016-07-26 04.01.47/", coh, "4Model.csv")
   refData <- tbl_df(read.csv(refData4ModelFile, na.string=missing_reps))
   refData2 <- tbl_df(as.data.frame(sapply(refData, as.numeric)))
   
@@ -168,21 +168,63 @@ for(coh in cohNames){
       eval(parse(text=paste0(
         "mutate(., pre_dmts_4=", paste(preDmtBoolVals_4, collapse="+"), ")"
       )))
-    } %>%
+    } 
     # "pre_dmts_1__2","pre_dmts_2__1_OR_2_OR_3","pre_dmts_3__1_OR_2","pre_dmts_4__1_OR_2_OR_3"
-    mutate(
-      pre_dmts_1__2 = as.numeric(pre_dmts_1==2),
-      pre_dmts_2__1_OR_2_OR_3 = as.numeric(pre_dmts_2 %in% c(1,2,3)),
-      pre_dmts_3__1_OR_2 = as.numeric(pre_dmts_3 %in% c(1,2)),
-      pre_dmts_4__1_OR_2_OR_3 = as.numeric(pre_dmts_4 %in% c(1,2,3))
-    ) %>%
-    select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) %>%
+    if(coh == "B2B"){
+      resultData <- resultData %>%
+        mutate(
+          pre_dmts_1__2 = as.numeric(pre_dmts_1==2),
+          pre_dmts_2__2 = as.numeric(pre_dmts_2==2),
+          pre_dmts_3__2 = as.numeric(pre_dmts_3==2),
+          pre_dmts_4__2 = as.numeric(pre_dmts_4==2)
+        ) %>%
+        select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) 
+    }else if(coh == "Cmp"){
+      resultData <- resultData %>%
+        mutate(
+          pre_dmts_1__2 = as.numeric(pre_dmts_1==2),
+          pre_dmts_2__1_OR_2_OR_3 = as.numeric(pre_dmts_2 %in% c(1,2,3)),
+          pre_dmts_3__1_OR_2 = as.numeric(pre_dmts_3 %in% c(1,2)),
+          pre_dmts_4__1_OR_2_OR_3 = as.numeric(pre_dmts_4 %in% c(1,2,3))
+        ) %>%
+        select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) 
+    }else if(coh == "BConti"){
+      resultData <- resultData %>%
+        mutate(
+          pre_dmts_1__1_OR_2 = as.numeric(pre_dmts_1 %in% c(1,2)),
+          pre_dmts_2__1_OR_2 = as.numeric(pre_dmts_2 %in% c(2,1)),
+          pre_dmts_3__1_OR_3 = as.numeric(pre_dmts_3 %in% c(2,1)),
+          pre_dmts_4__1_OR_2 = as.numeric(pre_dmts_4 %in% c(2,1))
+        ) %>%
+        select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) 
+    }else if (coh == "B2Fir"){
+      resultData <- resultData %>%
+        mutate(
+          pre_dmts_1__2 = as.numeric(pre_dmts_1==2),
+          pre_dmts_2__2_OR_3 = as.numeric(pre_dmts_2 %in% c(2,3)),
+          pre_dmts_3__2_OR_3 = as.numeric(pre_dmts_3 %in% c(2,3)),
+          pre_dmts_4__2_OR_3 = as.numeric(pre_dmts_4 %in% c(2,3))
+        ) %>%
+        select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) 
+    }else if(coh == "B2Sec"){
+      resultData <- resultData %>%
+        mutate(
+          pre_dmts_1__2 = as.numeric(pre_dmts_1==2),
+          pre_dmts_2__2_OR_3 = as.numeric(pre_dmts_2 %in% c(2,3)),
+          pre_dmts_3__2_OR_3 = as.numeric(pre_dmts_3 %in% c(2,3)),
+          pre_dmts_4__2 = as.numeric(pre_dmts_4 %in% c(2))
+        ) %>%
+        select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) 
+    }
+    
+    
     #   # because pre_dmts don't seem to affect the importance of dayssup, just copy from refData
     #   mutate(pre_dmts_1__2 = refData$pre_dmts_1__2[order(refData$record_num)], 
     #          pre_dmts_2__1_OR_2_OR_3 = refData$pre_dmts_2__1_OR_2_OR_3[order(refData$record_num)], 
     #          pre_dmts_3__1_OR_2 = refData$pre_dmts_3__1_OR_2[order(refData$record_num)], 
     #          pre_dmts_4__1_OR_2_OR_3 = refData$pre_dmts_4__1_OR_2_OR_3[order(refData$record_num)]) %>%
     # "pre1_edss_score__0_1","pre1_edss_score__1d5_2","pre1_edss_score__ge2d5"
+    resultData <- resultData %>%
     mutate(
       pre1_edss_score__0 = ifelse(is.na(pre1_edss_score), 0, pre1_edss_score %in% c(0)),
       pre1_edss_score__1_4 = ifelse(is.na(pre1_edss_score), 0,  between(pre1_edss_score, 1, 4)),
