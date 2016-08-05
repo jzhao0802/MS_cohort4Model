@@ -109,6 +109,33 @@ dir.create(resultDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
 
 for(coh in cohNames){
   cat(coh, '\n\n')
+  missing_reps <- c('', 'NA', 'unknown', 'ambiguous')
+  cohortDir_Jie <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-05/cohortDt_jie_July06/"
+  dtJieWithoutTransf <- read.csv(
+    paste0(cohortDir_Jie, "dt_", coh, "_withoutTransf.csv"), 
+    na.strings=missing_reps
+  )
+  
+#   if(coh=="BConti"){
+#     resultData <- dtJieWithoutTransf %>%
+#       mutate(dayssup = precont_dayssup) %>%
+#       mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+#       select(dayssup__gt360) 
+#     
+#   }else if(coh == "Cmp"){
+#     resultData <- dtJieWithoutTransf %>%
+#       mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
+#       mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+#       select(dayssup__gt360)
+#     
+#   }else{
+#     resultData <- dtJieWithoutTransf %>%
+#       mutate(dayssup = switch_rx_dayssup) %>%
+#       mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+#       select(dayssup__gt360)
+#     
+#   }
+  
   orgCohort <- tbl_df(read.csv(paste0(inputDir4DS, coh,".csv"))) %>%
     dplyr::rename(dayssup__gt360=dayssup_gt360) %>%
     dplyr::rename(dayssup__le360=dayssup_le360)
@@ -123,20 +150,12 @@ for(coh in cohNames){
   
   
   
-  missing_reps <- c('', 'NA', 'unknown', 'ambiguous')
-  cohortDir_Jie <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-05/cohortDt_jie_July06/"
   medianYears <- median(
-    read.csv(
-      paste0(cohortDir_Jie, "dt_", coh, "_withoutTransf.csv"), 
-      na.strings=missing_reps
-    )$years_diag_idx, na.rm=T
+    dtJieWithoutTransf$years_diag_idx, na.rm=T
   )
   
   if(bQcMode==T){
-    if(!is.numeric(read.csv(
-      paste0(cohortDir_Jie, "dt_", coh, "_withoutTransf.csv"), 
-      na.strings=missing_reps
-    )$years_diag_idx))
+    if(!is.numeric(dtJieWithoutTransf$years_diag_idx))
       stop('not numeric!\n\n')
   }
   
@@ -172,18 +191,23 @@ for(coh in cohNames){
   
   
   pct <- 0.15
+  avlVars <- grep('^avl_idx_\\w+$', colnames(orgCohort), value = T)
+  vars4findRef <- setdiff(colnames(orgCohort), avlVars)
   
   referencesForBinVars <- 
-    colnames(orgCohort) %>%
+    vars4findRef %>%
     str_extract(".*__") %>% # extract prefix
     .[!(is.na(.))] %>% # remove output vars
     unique %>%
     {
       uniquePrefixes <<- .
       .
+    } %>% {
+      varsFromLastStep <- .
+      temp <- lapply(varsFromLastStep, FindBinVarReference, allVarNames=setdiff(colnames(orgCohort), avlVars), dataset=orgCohort[, vars4findRef], 
+             minRefPct=pct)  
+      temp
     } %>%
-    lapply(FindBinVarReference, allVarNames=colnames(orgCohort), dataset=orgCohort, 
-           minRefPct=pct) %>%
     ldply(c)
   
   
