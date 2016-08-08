@@ -193,7 +193,7 @@ for(coh in cohNames){
         mutate(
           pre_dmts_1__1_OR_2 = as.numeric(pre_dmts_1 %in% c(1,2)),
           pre_dmts_2__1_OR_2 = as.numeric(pre_dmts_2 %in% c(2,1)),
-          pre_dmts_3__1_OR_3 = as.numeric(pre_dmts_3 %in% c(2,1)),
+          pre_dmts_3__1_OR_2 = as.numeric(pre_dmts_3 %in% c(2,1)),
           pre_dmts_4__1_OR_2 = as.numeric(pre_dmts_4 %in% c(2,1))
         ) %>%
         select(-pre_dmts_1, -pre_dmts_2, -pre_dmts_3, -pre_dmts_4) 

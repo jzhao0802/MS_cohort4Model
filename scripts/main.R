@@ -95,12 +95,40 @@ FindBinVarReference <- function(prefix, allVarNames, dataset, minRefPct)
   return (refVarName)
 }
 
+
+getPreDmtsDt <- function(orgDt, rangeInCriteria){
+  newPreDmtsLst <- lapply(1:4, function(i){
+    newNms <- paste0("pre_dmts_", i, "__", paste0(rangeInCriteria[[i]], collapse = '_OR_'))
+    # eval(parse(text=paste0(newNm, ' <- ifelse(orgDt[, paste0("pre_dmts_", i)] %in% rangeInCriteria[[i]], 1, 0)')))
+#     vct <-
+#       ifelse(orgDt[, paste0("pre_dmts_", i)] %in% rangeInCriteria[[i]], 1, 0)
+    vct <- ifelse(is.na(orgDt[, paste0("pre_dmts_", i)])
+                  , 0
+                  , as.numeric(orgDt[, paste0("pre_dmts_", i)] %in% rangeInCriteria[[i]]))
+    temp <- list(vct=vct, newNms=newNms) 
+    return(temp)
+  })
+  newNms <- unlist(lapply(newPreDmtsLst, function(x)x[[2]]))
+  newPreDmtsLst2 <- lapply(newPreDmtsLst, function(x)x[[1]])
+  names(newPreDmtsLst2) <- newNms
+  newPreDmtsDt <- as_data_frame(newPreDmtsLst2)
+  return(newPreDmtsDt)
+}
+
+
 bQcMode <-T 
 inputDir4DS <- "F:/Jie/MS/03_Result/2016-07-19/2016-07-19 01.52.43/"
 outcomes <- c("relapse_fu_any_01", "edssprog", "edssconf3",
               "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
 cohNames <- c("Cmp", "BConti", "B2B", "B2Fir", "B2Sec")
+missing_reps <- c('', 'NA', 'unknown', 'ambiguous')
+
+rawDataFile <- 
+  "F:/Lichao/work/Projects/MultipleSclerosis/data/2016-07-01/MS_decsupp_analset_20160701.csv"
+rawData <- tbl_df(read.csv(rawDataFile, na.string=missing_reps))
+
+rawNames <- colnames(rawData)
 
 timeStamp <- as.character(Sys.time())
 timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
@@ -109,32 +137,13 @@ dir.create(resultDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
 
 for(coh in cohNames){
   cat(coh, '\n\n')
-  missing_reps <- c('', 'NA', 'unknown', 'ambiguous')
   cohortDir_Jie <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-05/cohortDt_jie_July06/"
   dtJieWithoutTransf <- read.csv(
     paste0(cohortDir_Jie, "dt_", coh, "_withoutTransf.csv"), 
     na.strings=missing_reps
   )
   
-#   if(coh=="BConti"){
-#     resultData <- dtJieWithoutTransf %>%
-#       mutate(dayssup = precont_dayssup) %>%
-#       mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
-#       select(dayssup__gt360) 
-#     
-#   }else if(coh == "Cmp"){
-#     resultData <- dtJieWithoutTransf %>%
-#       mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
-#       mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
-#       select(dayssup__gt360)
-#     
-#   }else{
-#     resultData <- dtJieWithoutTransf %>%
-#       mutate(dayssup = switch_rx_dayssup) %>%
-#       mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
-#       select(dayssup__gt360)
-#     
-#   }
+
   
   orgCohort <- tbl_df(read.csv(paste0(inputDir4DS, coh,".csv"))) %>%
     dplyr::rename(dayssup__gt360=dayssup_gt360) %>%
@@ -181,9 +190,14 @@ for(coh in cohNames){
       stop('not impute completely!\n\n')
   }
   
-  orgCohort <- select(orgCohort, -years_diag_idx__missing)
+  orgCohort <- select(orgCohort, -years_diag_idx__missing) %>%
   
-  
+  # remove avl_idx_*__0 as reference if there is any
+  {
+    varsFromLastStep <- names(.)
+    select(., -one_of(grep('^avl_idx_\\w+__0$', varsFromLastStep, value = T)))
+    
+  }
   
   #
   ## find and remove reference categories
@@ -193,7 +207,8 @@ for(coh in cohNames){
   pct <- 0.15
   avlVars <- grep('^avl_idx_\\w+$', colnames(orgCohort), value = T)
   vars4findRef <- setdiff(colnames(orgCohort), avlVars)
-  
+#   
+  # vars4findRef <- colnames(orgCohort)
   referencesForBinVars <- 
     vars4findRef %>%
     str_extract(".*__") %>% # extract prefix
@@ -204,7 +219,7 @@ for(coh in cohNames){
       .
     } %>% {
       varsFromLastStep <- .
-      temp <- lapply(varsFromLastStep, FindBinVarReference, allVarNames=setdiff(colnames(orgCohort), avlVars), dataset=orgCohort[, vars4findRef], 
+      temp <- lapply(varsFromLastStep, FindBinVarReference, allVarNames=vars4findRef, dataset=orgCohort[, vars4findRef], 
              minRefPct=pct)  
       temp
     } %>%
@@ -216,7 +231,7 @@ for(coh in cohNames){
   refs4RemainPrefixes <- c(
     "age__le30",
     "baseline_edss_score__0",
-    "birth_region__Central_Europe",
+    "birth_region__missing",
     "gender__F"
   )
   
@@ -411,12 +426,61 @@ for(coh in cohNames){
   
   sortedVarNames <- sort(colnames(cohortFlagAppendedData))
   restVarNames <- sortedVarNames[!(sortedVarNames %in% c(recordIDColName, outcomes))]
-  cohortFlagAppendedData <- cohortFlagAppendedData[, c(recordIDColName, outcomes, restVarNames)]
+  cohortFlagAppendedData <- cohortFlagAppendedData[, c(recordIDColName, outcomes, restVarNames)] %>%
+    select(-one_of(grep("^dayssup__|^pre_dmts_", names(cohortFlagAppendedData), value=T)))
   
   #
+  # create dayssup and pre_dmts variables from raw data 
   
+    if(coh=="BConti"){
+      dayssupDt <- rawData %>%
+        mutate(dayssup = precont_dayssup) %>%
+        mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+        select(dayssup__gt360) 
+      
+    }else if(coh == "Cmp"){
+      dayssupDt <- rawData %>%
+        mutate(dayssup = ifelse(is.na(precont_dayssup), switch_rx_dayssup, precont_dayssup)) %>%
+        mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+        select(dayssup__gt360)
+      
+    }else{
+      dayssupDt <- rawData %>%
+        mutate(dayssup = switch_rx_dayssup) %>%
+        mutate(dayssup__gt360 = ifelse(dayssup > 360, 1, 0)) %>%
+        select(dayssup__gt360)
+      
+    }
   
-  write.table(cohortFlagAppendedData, paste0(resultDir, coh, "4Model.csv"), sep=",", 
+  preDmtsDt <- dtJieWithoutTransf %>%
+    select(one_of(grep('^pre_dmts_[1-4]$', names(dtJieWithoutTransf), value=T))) %>%
+    {
+      if(coh == 'B2B')
+        newPreDmtsDt <- getPreDmtsDt(., list(2,2,2,2))
+      if(coh == 'B2Fir')
+        newPreDmtsDt <- getPreDmtsDt(., list(2,c(2,3),c(2,3),c(2,3)))
+      if(coh == 'B2Sec')
+        newPreDmtsDt <- getPreDmtsDt(., list(2,c(2,3),c(2,3),2))
+      if(coh == 'BConti')
+        newPreDmtsDt <- getPreDmtsDt(., list(c(1,2),c(1,2),c(1,2),c(1,2)))
+      if(coh == 'Cmp')
+        newPreDmtsDt <- getPreDmtsDt(., list(2,c(1,2,3),c(1,2),c(1,2,3)))
+      return(newPreDmtsDt)
+    }
+  
+  cohortDtFinal <- cohortFlagAppendedData %>%
+    bind_cols(preDmtsDt) %>%
+    bind_cols(dayssupDt[.$record_num, ]) %>%
+  {
+    if(coh != 'Cmp'){
+      dt <- select(., -one_of(c("B2B", 'B2Fir', 'B2Sec')))
+    }else{
+      dt <- .
+    }
+    return(dt)
+  }
+  
+  write.table(cohortDtFinal, paste0(resultDir, coh, "4Model.csv"), sep=",", 
               row.names=F)
   
 }
